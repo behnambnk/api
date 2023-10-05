@@ -1,8 +1,6 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
-from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template, request
 from sqlalchemy import text
 import os 
 
@@ -14,13 +12,22 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String)
-    password= db.Column(db.Integer)
+    password = db.Column(db.Integer)  
     
-    
-    def __init__(self, id, email, password,):
-        self.id = id
+    def __init__(self, email, password):
         self.email = email
-        self.total_price = password
+        self.password = password
+
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    
+    def __init__(self, name):
+        self.name = name
+        
+
+
+
         
 with app.app_context():
     try:
@@ -31,6 +38,7 @@ with app.app_context():
 
 CORS(app)
 
+
 tasks = [
     {
         'id': 1,
@@ -40,7 +48,7 @@ tasks = [
         'id': 2,
         'name': 'Find a location',
     },
-    {
+       {
         'id': 3,
         'name': 'Screenshot the address',
     },
@@ -54,15 +62,34 @@ tasks = [
     }
 ]
 
-@app.route('/tasks')
+@app.route('/tasks', methods=['POST'])
 def get_tasks():
-    return jsonify(tasks)
+     json_data = request.get_json()
+
+     name = json_data.get('name')
+
 
 @app.route('/sign_up', methods=['POST'])
 def sign_up():
     json_data = request.get_json()
-    print(json_data)
-    return make_response ('success')
+    
+   
+    email = json_data.get('email')
+    password = json_data.get('password')
+
+    if not email or not password:
+        return make_response(jsonify({'error': 'Email and password are required.'}), 400)
+
+    
+    new_user = User(email=email, password=password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return make_response(jsonify({'message': 'User created successfully!'}), 201)
+
+
+
+
 
 if __name__ == '__main__':
     app.debug = True
